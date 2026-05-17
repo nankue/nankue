@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta charset="utf-8" name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>手机号定位查询</title>
+    <style>
+  /*去除按钮点击后的选中框*/
+*:focus {outline: none !important; }button,input[type="button"],input[type="submit"],input[type="reset"] {outline: none !important;border: none; }*:active {-webkit-tap-highlight-color: transparent; }@media print {*:focus {outline: none !important;}}
+  /*去除超链接的聚焦选中框*/
+a {outline: none !important;-webkit-tap-highlight-color: transparent !important;}a:active,a:focus {outline: 0 !important;}
+  /*去除输入控件轮廓线*/
+input, textarea {outline: none;}input:focus, textarea:focus {outline: none;box-shadow: none; }
+
+@keyframes fadeIn {
+  from {
+    transform: translateX(100px);
+    background-color:#000000;
+    margin:0px;     
+    filter: blur(5px);  
+    opacity: 0;     
+  }
+  to {        
+    opacity: 1;     
+  }
+}
+.container,.resultContainer{
+  opacity: 0;   
+  animation: fadeIn 2s forwards; 
+}
+body{
+  margin:20px;background-color:#0d1116;
+  color:#cccccc;overflow-x: hidden;
+  }
+.container{
+  background-color:rgba(0,0,0,0.2);
+  padding:10px;
+  border-radius:10px;   
+  }
+ input,textarea,select{
+  background-color:rgba(255,255,255,0.1);
+  padding:5px;
+  width:60%;
+  border: none;
+  border-radius:5px;
+  color:#fff;
+  }
+ iframe{
+  background-color:rgba(255,255,255,0.1);
+  border-radius:5px; 
+  border:none;
+  }
+button{
+  background-color:#0c254b;
+  color:#c0d0ff;
+  border:none;
+  padding:10px;
+  width:60%;
+  border-radius:8px; 
+ }
+button {
+  transition: all 0.3s ease; 
+  transform: scale(1); 
+}
+button:hover {
+  filter: brightness(0.5);
+  transform: scale(0.98);
+}
+button:active,
+button:focus {
+  transform: scale(1);
+}
+a{
+  color:#4c8bff;
+  }
+       .container {
+            background-color:rgba(0,0,0,0.2);
+            padding:10px;
+            border-radius:10px; 
+            overflow-y: auto;
+            max-height:90vh;        
+        }
+        .result-item {
+            margin-bottom: 5px;
+            padding: 5px;
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 5px;
+            background-color: rgba(255,255,255,0.1);
+            opacity: 0;
+            animation: result 0.5s forwards;
+        }
+        @keyframes result {
+            to { opacity: 1; }
+        }
+        .phone-number {
+            font-weight:900;
+            color: #ccc;
+            margin-bottom: 5px;
+        }
+        .location-info {
+            color: #7f8c8d;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        .error {
+            color: #e74c3c;
+            text-align: center;
+            padding: 10px;
+        }
+        #resultContainer {
+            margin-top: 20px;
+        }
+        .status {
+            text-align: center;
+            padding: 10px;
+            color: #666;
+        }
+        .history-btn:hover {
+            background-color: #ec971f;
+        }
+    </style>
+</head>
+<body>
+   <div class="container">
+       <center>
+           <h3 style="margin-bottom:3px">全国手机号定位</h3>
+                <div style="font-weight:500;font-size:12px;opacity:0.5;margin-bottom:20px;">
+                     数据源自连接免费局域网或访问风险域名时泄露<br>
+                     数据仅供参考 部分信息可能存在偏差延迟
+               </div>  
+           <input type="text" id="phoneInput" placeholder="请输入手机号码" maxlength="11">
+           <p style="margin:3px"></p>    
+           <button onclick="startSearch()">查询定位</button> 
+        </center>
+           <div style="font-size:10px" id="resultContainer"></div>        
+        <p>
+    </div>
+    
+    <button style="width:0;font-size:0;opacity:0" onclick="showHistory()">查询记录</button>
+
+    <script>
+        const randomKeywords = [
+            '饭馆', '银行', '屯', '乡', '街道', '超市', '茶', '咖啡', '吾悦', '万达', '大桥', '医院', 
+            '号', '村', '小区', '中学', '小学', '佳苑', '嘉园', '路', '市场', 
+            '菜市场', '广场', '公园', '公司', '店', '园区'
+        ];
+
+        const accessMethods = ['WIFI', '个人证书'];
+        
+        const STORAGE_KEY = 'phoneLocationHistory';
+        
+        window.onload = function() {
+            loadHistory();
+        };
+        
+        async function startSearch() {
+            const phone = document.getElementById('phoneInput').value.trim();
+            const resultContainer = document.getElementById('resultContainer');
+            resultContainer.innerHTML = '';
+            
+            if (!/^1[3-9]\d{9}$/.test(phone)) {
+                showError('请输入有效的手机号码');
+                return;
+            }
+
+            const history = getHistory();
+            const existingRecord = history.find(item => item.phone === phone);
+            
+            if (existingRecord) {
+                showStatus('调库中请稍候...');
+                setTimeout(() => {
+                    displayResults(phone, existingRecord.location, existingRecord.addresses);
+                }, 1000);
+                return;
+            }            
+            showStatus('调库中请稍候...');            
+            try {
+                // 替换为新接口
+                const locationResponse = await fetch(`https://uapis.cn/api/v1/misc/phoneinfo?phone=${phone}`);
+                const data = await locationResponse.json();
+
+                if (!data || !data.province || !data.city) {
+                    showError('未找到归属地信息');
+                    return;
+                }
+                // 拼接归属地：省+市
+                const location = data.province + data.city;
+                const cleanedLocation = location.replace(/\s+/g, '');
+                const randomCount = getRandomInt(5, 10);
+                const addresses = [];
+                const usedKeywords = new Set();
+                while (addresses.length < randomCount && usedKeywords.size < randomKeywords.length) {
+                    let keyword;
+                    do {
+                        keyword = randomKeywords[Math.floor(Math.random() * randomKeywords.length)];
+                    } while (usedKeywords.has(keyword));
+                    usedKeywords.add(keyword);
+                    
+                    try {
+                        const apiUrl = `https://map.qq.com/m/data/place/sug/city=${cleanedLocation}&word=${keyword}?access_token=96456ebb9958608713c5f23d0733b2df560da30835c66154e7&ticket=wt05hFiMG0DzsWzq6L5pyOUWocSAQQLj7OVplAxUs0zQNbZ-DJHqB5bCQ`;
+                        const mapResponse = await fetch(apiUrl);
+                        const mapData = await mapResponse.json();
+                        
+                        if (mapData && mapData.length > 0) {
+                            const randomItem = mapData[Math.floor(Math.random() * mapData.length)];
+                            addresses.push({
+                                address: `${randomItem.word}-${randomItem.addr}`,
+                                location: `${randomItem.pointx},${randomItem.pointy}`,
+                                accessMethod: accessMethods[Math.floor(Math.random() * accessMethods.length)],
+                                networkTime: `${getRandomInt(1, 7)}个月前`
+                            });
+                        }
+                    } catch (error) {
+                        console.error(`查询关键词${keyword}失败:`, error);
+                    }
+                }
+                
+                if (addresses.length === 0) {
+                    showError('未能获取到地址信息');
+                    return;
+                }
+
+                addresses.sort((a, b) => parseInt(a.networkTime) - parseInt(b.networkTime));
+
+                saveToHistory(phone, location, addresses);
+
+                showStatus('正在解析...');
+                setTimeout(() => {
+                    displayResults(phone, location, addresses);
+                }, 500);
+                
+            } catch (error) {
+                console.error("查询失败:", error);
+                showError('查询失败 请稍后再试');
+            }
+        }
+
+        // 旧解析函数删掉，不再需要
+        // function parseLocation(html) { ... }
+        
+        function displayResults(phone, location, addresses) {
+            const resultContainer = document.getElementById('resultContainer');
+            resultContainer.innerHTML = '';
+
+            const locationDiv = document.createElement('div');
+            locationDiv.className = 'location-info';
+            locationDiv.textContent = `运营商注册归属地: ${location}`;
+            resultContainer.appendChild(locationDiv);
+            
+            addresses.forEach((addr, index) => {
+                setTimeout(() => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'result-item';
+                    itemDiv.style.animationDelay = `${index * 0.1}s`;
+                    
+                    const phoneDiv = document.createElement('div');
+                    phoneDiv.className = 'phone-number';
+                    phoneDiv.textContent = `手机号: ${phone}`;
+                    itemDiv.appendChild(phoneDiv);
+                    
+                    const locationDiv = document.createElement('div');
+                    locationDiv.textContent = `经纬度: ${addr.location}`;
+                    itemDiv.appendChild(locationDiv);
+                    
+                    const addressDiv = document.createElement('div');
+                    addressDiv.textContent = `地址: ${addr.address}`;
+                    itemDiv.appendChild(addressDiv);
+                    
+                    const timeDiv = document.createElement('div');
+                    timeDiv.textContent = `入网时间: ${addr.networkTime}`;
+                    itemDiv.appendChild(timeDiv);
+                    
+                    const methodDiv = document.createElement('div');
+                    methodDiv.textContent = `获取方式: ${addr.accessMethod}`;
+                    itemDiv.appendChild(methodDiv);
+                    
+                    resultContainer.appendChild(itemDiv);
+                }, index * 100); 
+            });
+        }
+        function getHistory() {
+            const historyStr = localStorage.getItem(STORAGE_KEY);
+            return historyStr ? JSON.parse(historyStr) : [];
+        }        
+        function saveToHistory(phone, location, addresses) {
+            const history = getHistory();
+            const existingIndex = history.findIndex(item => item.phone === phone);           
+            if (existingIndex >= 0) {
+                history[existingIndex] = { phone, location, addresses };
+            } else {
+                history.push({ phone, location, addresses });
+            }            
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+        }        
+        function loadHistory() {
+            const history = getHistory();
+            if (history.length > 0) {
+                console.log('已加载历史记录:', history);
+            }
+        }        
+        function showHistory() {
+            const history = getHistory();
+            const resultContainer = document.getElementById('resultContainer');
+            resultContainer.innerHTML = '';            
+            if (history.length === 0) {
+                showError('暂无历史记录');
+                return;
+            }           
+            showStatus('显示历史记录中...');
+            setTimeout(() => {
+                history.forEach(record => {
+                    const recordDiv = document.createElement('div');
+                    recordDiv.className = 'result-item';
+                    recordDiv.innerHTML = `<div class="phone-number">手机号: ${record.phone}</div>
+                                         <div>归属地: ${record.location}</div>
+                                         <div>记录时间: ${new Date().toLocaleString()}</div>`;
+                    resultContainer.appendChild(recordDiv);
+                    recordDiv.addEventListener('click', () => {
+                        displayResults(record.phone, record.location, record.addresses);
+                    });
+                });
+            }, 1000);
+        }
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }        
+        function showStatus(message) {
+            const resultContainer = document.getElementById('resultContainer');
+            resultContainer.innerHTML = `<div class="status">${message}</div>`;
+        }        
+        function showError(message) {
+            const resultContainer = document.getElementById('resultContainer');
+            resultContainer.innerHTML = `<div class="error">${message}</div>`;
+        }
+        document.getElementById('phoneInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                startSearch();
+            }
+        });
+    </script>
+    
+  <script>
+function getUrlParam(name) {const reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)");const r = window.location.search.substr(1).match(reg);if (r != null) return decodeURIComponent(r[2]);return null;}const kamiStr = getUrlParam('kami');const username = getUrlParam('username');
+if (!kamiStr || !username) {    setInterval(() => {if (document.getElementById('param-error-modal')) return;const mask = document.createElement('div');mask.id = 'param-error-modal';mask.style.cssText = `position: fixed;top: 0;left: 0;width: 100%;height: 100%;background: rgba(0,0,0,0.6);display: flex;justify-content: center;align-items: center;z-index: 99999999;opacity: 0;transition: opacity 0.3s ease;`;const modalBox = document.createElement('div');modalBox.style.cssText = `background: #fff;padding: 20px 30px;border-radius: 25px;font-size: 13px;color: #333;box-shadow: 0 4px 20px rgba(0,0,0,0.2);transform: scale(0.9);transition: transform 0.3s ease;`;modalBox.innerHTML = `
+          <center><img style="border-radius:10px;background-color:#fff;width:40%" 
+           src="
+               https://s3.getstickerpack.com/storage/uploads/sticker-pack/utyaduck2-1/sticker_20.gif?6caebfdccd0f294353aa397608a2d145&d=200x200               
+            "/></center>
+            <div style="font-weight:900;text-align: center; font-size: 20px; margin-bottom: 15px;">参数不全</div>                
+                检测到入口错误<br/>
+                请从正确入口重新进入…
+            </div>
+    `;mask.appendChild(modalBox);document.body.appendChild(mask);setTimeout(() => {mask.style.opacity = '1';modalBox.style.transform = 'scale(1)';}, 10);}, 500);} else {const waterMark = document.createElement('div');waterMark.id = "kamiWaterMark";waterMark.style.cssText = `position:fixed;top:5px;right:5px;z-index:9999999;background:#ccc;padding:5px;border-radius:25px 15px 5px 25px;font-family:"SimSun","宋体",serif;font-size:8px;color:#101010;display:flex;font-weight:900;align-items:center;gap:10px;pointer-events:none;user-select:none;box-shadow:0 2px 12px rgba(0,0,0,0.5);`;
+    const tgIcon = document.createElement('img');
+    tgIcon.src = "https://s1.aigei.com/src/img/png/bb/bb2d379396aa405da9d57fba0c81833d.png?imageMogr2/auto-orient/thumbnail/!282x282r/gravity/Center/crop/282x282/quality/85/%7CimageView2/2/w/282&e=2051020800&token=P7S2Xpzfz11vAkASLTkfHN7Fw-oOZBecqeJaxypL:AwT-V79rFdBd74kHuGiOfa9Q1hM=";
+    tgIcon.style.cssText = `width: 28px;height: 28px;border-radius: 50%;object-fit: cover;`;const textWrap = document.createElement('div');textWrap.style.lineHeight = "1.6";
+waterMark.appendChild(tgIcon);waterMark.appendChild(textWrap);document.body.appendChild(waterMark);function parseKamiTime(str) {const y = str.slice(0, 4);const m = str.slice(4, 6);const d = str.slice(6, 8);const h = str.slice(8, 10);const mi = str.slice(10, 12);const s = str.slice(12, 14);return new Date(`${y}-${m}-${d} ${h}:${mi}:${s}`).getTime();}const endTime = parseKamiTime(kamiStr);let expireFlag = false;function showExpireModal() {if (document.getElementById('expire-modal')) return;const mask = document.createElement('div');mask.id = 'expire-modal';mask.style.cssText = `position: fixed;top: 0;left: 0;width: 100%;height: 100%;background: rgba(0,0,0,0.6);display: flex;justify-content: center;align-items: center;z-index: 99999999;opacity: 0;transition: opacity 0.3s ease;`;const modalBox = document.createElement('div');modalBox.style.cssText = `background: #fff;padding: 20px 30px;border-radius: 25px;font-size: 13px;color: #333;box-shadow: 0 4px 20px rgba(0,0,0,0.2);transform: scale(0.9);transition: transform 0.3s ease;`;modalBox.innerHTML = `
+
+         <center><img style="border-radius:10px;background-color:#fff;width:40%" 
+           src="
+               https://s3.getstickerpack.com/storage/uploads/sticker-pack/utyaduck2-1/sticker_28.gif?6caebfdccd0f294353aa397608a2d145&d=200x200
+            "/></center>
+            <div style="font-weight:900;text-align: center; font-size: 20px; margin-bottom: 15px;">没有资格使用功能</div>
+            <div>🕒您的卡密已失效<br/>🚀当前为游客预览模式<br/>🚀请先返回机器人激活卡密…
+            </div>
+`;mask.appendChild(modalBox);document.body.appendChild(mask);setTimeout(() => {mask.style.opacity = '1';modalBox.style.transform = 'scale(1)';}, 10);}function countDown() {if (expireFlag) return;const now = Date.now();const diff = endTime - now;if (diff <= 0) {expireFlag = true;setInterval(() => {showExpireModal();}, 500);textWrap.innerHTML = `您好，${username}<br>卡密：已过期`;return;}const day = Math.floor(diff / (1000 * 60 * 60 * 24));const hour = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));const min = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));const sec = Math.floor((diff % (1000 * 60)) / 1000);textWrap.innerHTML = `欢迎，${username}<br>卡密：${day}天${hour}小时${min}分${sec}秒后到期`;}countDown();setInterval(countDown, 1000);}
+</script>  
+</body>
+</html>

